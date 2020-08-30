@@ -85,6 +85,7 @@ client_protocols = [
 	[wl_protocol_dir, 'staging/ext-session-lock/ext-session-lock-v1.xml'],
 	['wlr-layer-shell-unstable-v1.xml'],
 	['wlr-input-inhibitor-unstable-v1.xml'],
+	['wlr-output-power-management-unstable-v1.xml'],
 ]
 
 foreach p : client_protocols
