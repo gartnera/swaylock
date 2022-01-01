@@ -2,6 +2,7 @@
 #define _SWAYLOCK_COMM_H
 
 #include <stdbool.h>
+#include <sys/types.h>
 
 struct swaylock_password;
 
