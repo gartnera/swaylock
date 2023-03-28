@@ -75,6 +75,8 @@ struct swaylock_state {
 	struct loop *eventloop;
 	struct loop_timer *clear_indicator_timer; // clears the indicator
 	struct loop_timer *clear_password_timer;  // clears the password buffer
+	struct loop_timer *power_off_timer;  // powers off the display
+	bool needs_power_on;
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct wl_subcompositor *subcompositor;
@@ -97,6 +99,7 @@ struct swaylock_surface {
 	cairo_surface_t *image;
 	struct swaylock_state *state;
 	struct wl_output *output;
+	struct zwlr_output_power_v1 *wlr_output_power;
 	uint32_t output_global_name;
 	struct wl_surface *surface; // surface for background
 	struct wl_surface *child; // indicator surface made into subsurface

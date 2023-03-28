@@ -26,6 +26,9 @@
 #include "seat.h"
 #include "swaylock.h"
 #include "ext-session-lock-v1-client-protocol.h"
+#include "wlr-output-power-management-unstable-v1-client-protocol.h"
+
+struct zwlr_output_power_manager_v1 *wlr_output_power_manager = NULL;
 
 static uint32_t parse_color(const char *color) {
 	if (color[0] == '#') {
@@ -309,9 +312,15 @@ static void handle_global(void *data, struct wl_registry *registry,
 			create_surface(surface);
 			wl_display_roundtrip(state->display);
 		}
+		surface->wlr_output_power = zwlr_output_power_manager_v1_get_output_power(
+					wlr_output_power_manager, surface->output);
 	} else if (strcmp(interface, ext_session_lock_manager_v1_interface.name) == 0) {
 		state->ext_session_lock_manager_v1 = wl_registry_bind(registry, name,
 				&ext_session_lock_manager_v1_interface, 1);
+	}
+	else if ( strcmp(interface, zwlr_output_power_manager_v1_interface.name) == 0 ) {
+		wlr_output_power_manager = wl_registry_bind(registry, name,
+				&zwlr_output_power_manager_v1_interface, version);
 	}
 }
 
