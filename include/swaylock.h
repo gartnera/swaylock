@@ -82,6 +82,8 @@ struct swaylock_state {
 	struct loop_timer *input_idle_timer; // timer to reset input state to IDLE
 	struct loop_timer *auth_idle_timer; // timer to stop displaying AUTH_STATE_INVALID
 	struct loop_timer *clear_password_timer;  // clears the password buffer
+	struct loop_timer *power_off_timer;  // powers off the display
+	bool needs_power_on;
 	struct wl_display *display;
 	struct wl_compositor *compositor;
 	struct wl_subcompositor *subcompositor;
@@ -100,12 +102,14 @@ struct swaylock_state {
 	bool run_display, locked;
 	struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1;
 	struct ext_session_lock_v1 *ext_session_lock_v1;
+	struct zwlr_output_power_manager_v1 *zwlr_output_power_manager_v1;
 };
 
 struct swaylock_surface {
 	cairo_surface_t *image;
 	struct swaylock_state *state;
 	struct wl_output *output;
+	struct zwlr_output_power_v1 *wlr_output_power;
 	uint32_t output_global_name;
 	struct wl_surface *surface; // surface for background
 	struct wl_surface *child; // indicator surface made into subsurface
@@ -143,5 +147,6 @@ void schedule_auth_idle(struct swaylock_state *state);
 void initialize_pw_backend(int argc, char **argv);
 void run_pw_backend_child(void);
 void clear_buffer(char *buf, size_t size);
+void schedule_power_off(struct swaylock_state *state);
 
 #endif

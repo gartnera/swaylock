@@ -12,6 +12,8 @@
 #include "swaylock.h"
 #include "unicode.h"
 
+#include "wlr-output-power-management-unstable-v1-client-protocol.h"
+
 void clear_buffer(char *buf, size_t size) {
 	// Use volatile keyword so so compiler can't optimize this out.
 	volatile char *buffer = buf;
@@ -83,6 +85,30 @@ void schedule_auth_idle(struct swaylock_state *state) {
 		state->eventloop, 3000, set_auth_idle, state);
 }
 
+static void power_off(void *data) {
+	struct swaylock_state *state = data;
+	struct swaylock_surface *surface;
+	state->needs_power_on = true;
+	wl_list_for_each(surface, &(state->surfaces), link) {
+		zwlr_output_power_v1_set_mode(surface->wlr_output_power, ZWLR_OUTPUT_POWER_V1_MODE_OFF);
+	}
+}
+
+void schedule_power_off(struct swaylock_state *state) {
+	if (state->power_off_timer) {
+		loop_remove_timer(state->eventloop, state->power_off_timer);
+	}
+	state->power_off_timer = loop_add_timer(
+			state->eventloop, 15000, power_off, state);
+}
+
+static void power_on(struct swaylock_state *state) {
+	struct swaylock_surface *surface;
+	wl_list_for_each(surface, &(state->surfaces), link) {
+		zwlr_output_power_v1_set_mode(surface->wlr_output_power, ZWLR_OUTPUT_POWER_V1_MODE_ON);
+	}
+}
+
 static void clear_password(void *data) {
 	struct swaylock_state *state = data;
 	state->clear_password_timer = NULL;
@@ -134,6 +160,12 @@ static void update_highlight(struct swaylock_state *state) {
 void swaylock_handle_key(struct swaylock_state *state,
 		xkb_keysym_t keysym, uint32_t codepoint) {
 
+	if (state->needs_power_on) {
+		power_on(state);
+		state->needs_power_on = false;
+	}
+	schedule_power_off(state);
+
 	switch (keysym) {
 	case XKB_KEY_KP_Enter: /* fallthrough */
 	case XKB_KEY_Return:
@@ -170,6 +202,8 @@ void swaylock_handle_key(struct swaylock_state *state,
 	case XKB_KEY_Shift_R:
 	case XKB_KEY_Control_L:
 	case XKB_KEY_Control_R:
+		power_on(state);
+		break;
 	case XKB_KEY_Meta_L:
 	case XKB_KEY_Meta_R:
 	case XKB_KEY_Alt_L:

@@ -26,6 +26,7 @@
 #include "seat.h"
 #include "swaylock.h"
 #include "ext-session-lock-v1-client-protocol.h"
+#include "wlr-output-power-management-unstable-v1-client-protocol.h"
 
 static uint32_t parse_color(const char *color) {
 	if (color[0] == '#') {
@@ -277,9 +278,18 @@ static void handle_global(void *data, struct wl_registry *registry,
 		surface->output_global_name = name;
 		wl_output_add_listener(surface->output, &_wl_output_listener, surface);
 		wl_list_insert(&state->surfaces, &surface->link);
+
+		// zwlr_output_power_manager_v1 may not be set if compositor does not support this protocol
+		if (state->zwlr_output_power_manager_v1 != NULL) {
+			surface->wlr_output_power = zwlr_output_power_manager_v1_get_output_power(
+					state->zwlr_output_power_manager_v1, surface->output);
+		}
 	} else if (strcmp(interface, ext_session_lock_manager_v1_interface.name) == 0) {
 		state->ext_session_lock_manager_v1 = wl_registry_bind(registry, name,
 				&ext_session_lock_manager_v1_interface, 1);
+	} else if (strcmp(interface, zwlr_output_power_manager_v1_interface.name) == 0 ) {
+		state->zwlr_output_power_manager_v1 = wl_registry_bind(registry, name,
+				&zwlr_output_power_manager_v1_interface, version);
 	}
 }
 
@@ -1247,6 +1257,7 @@ int main(int argc, char **argv) {
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 	sigaction(SIGUSR1, &sa, NULL);
+	schedule_power_off(&state);
 
 	state.run_display = true;
 	while (state.run_display) {
